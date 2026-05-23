@@ -18,7 +18,7 @@ def analizar(perfil):
         role="Analista de Red Team",
         goal="Analizar vulnerabilidades y planear el ataque más efectivo",
         backstory="Eres un experto en ciberseguridad con años de experiencia en pentesting",
-        llm="ollama/gemma4",
+        llm="ollama/llama3.1:8b",
         tools=[escanear_nmap],
         verbose=True
     )

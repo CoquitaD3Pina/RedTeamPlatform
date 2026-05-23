@@ -1,0 +1,9 @@
+.env
+__pycache__/
+*.pdf
+*.pyc
+*.log
+redteam.db
+/tmp/
+.vscode/
+.idea/

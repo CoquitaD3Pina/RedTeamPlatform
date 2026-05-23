@@ -1,34 +1,48 @@
 import subprocess
-
-class TargetProfile:
-    def __init__(self, ip):
-        self.ip = ip
-        self.os_family = "desconocido"
-        self.os_version = ""
-        self.architecture = "x64"
-        self.services = []
-        self.ports = []
-        self.probable_cves = []
-        self.attack_surface = []
-        self.exploit_candidates = []
-        self.nmap_output = ""
+import config
+from utils.logger import log
+from core.models import TargetProfile
+from core.database import RedTeamDB
 
 def escanear(ip):
-    print(f"\n🔍 Escaneando {ip}...")
-    resultado = subprocess.run(
-        [r"C:\Program Files (x86)\Nmap\nmap.exe",
-         "-sV", "-O", "--osscan-guess", "--script", "banner", ip],
-        capture_output=True, text=True
-    )
-    output = resultado.stdout
+    log.info(f"🔍 Iniciando escaneo Nmap contra {ip}...")
+    nmap_exec = config.NMAP_PATH
+    
+    try:
+        resultado = subprocess.run(
+            [nmap_exec, "-sV", "-O", "--osscan-guess", "--script", "banner", ip],
+            capture_output=True, text=True, timeout=300
+        )
+        output = resultado.stdout
+    except FileNotFoundError:
+        log.error(f"El ejecutable de Nmap no se encontró en la ruta especificada: {nmap_exec}. Usando 'nmap' del PATH del sistema...")
+        try:
+            resultado = subprocess.run(
+                ["nmap", "-sV", "-O", "--osscan-guess", "--script", "banner", ip],
+                capture_output=True, text=True, timeout=300
+            )
+            output = resultado.stdout
+        except Exception as e:
+            log.critical(f"No se pudo ejecutar Nmap desde el PATH: {e}")
+            raise e
+    except Exception as e:
+        log.critical(f"Error inesperado al ejecutar Nmap: {e}")
+        raise e
+
     perfil = TargetProfile(ip)
     perfil.nmap_output = output
     perfil.os_family = _detectar_os(output)
     perfil.architecture = _detectar_arquitectura(output)
     perfil.services = _extraer_servicios(output)
     perfil.ports = _extraer_puertos(output)
-    print(f"✅ OS: {perfil.os_family.upper()} | Arquitectura: {perfil.architecture}")
-    print(f"   Puertos abiertos: {perfil.ports}")
+    
+    log.info(f"✅ Escaneo completado. OS: {perfil.os_family.upper()} | Arquitectura: {perfil.architecture}")
+    log.info(f"Puertos abiertos detectados: {perfil.ports}")
+
+    # Guardar en base de datos
+    db = RedTeamDB()
+    db.registrar_scan(ip, perfil.os_family, perfil.services, perfil.ports)
+    
     return perfil
 
 
@@ -57,7 +71,7 @@ def _detectar_os(output):
     elif "windows" in lower or "microsoft" in lower or "cpe:/o:microsoft" in lower:
         return "windows"
 
-    # Apple iOS (iPhone/iPad) — ANTES que Cisco IOS
+    # Apple iOS
     elif any(x in lower for x in ["iphone", "ipad", "ipod", "apple ios",
                                    "ios device", "bonjour", "airplay",
                                    "itunes", "cfnetwork"]):
