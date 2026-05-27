@@ -1,4 +1,4 @@
-# 🛡️ Autonomous AI Red Team Platform v2.1
+# 🛡️ D4yShell
 
 Suite de ciberseguridad ofensiva autónoma basada en agentes de Inteligencia Artificial. La plataforma realiza reconocimiento activo/pasivo, modela superficies de ataque usando múltiples agentes (CrewAI), realiza ataques de fuerza bruta y explotación, ejecuta post-explotación remota sobre objetivos comprometidos y genera reportes formales en formato PDF, además de ofrecer un centro de comando web local.
 
