@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///C:/Program Files (x86)/Nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.80 scan initiated Mon May 25 18:55:22 2026 as: &quot;C:\\Program Files (x86)\\Nmap\\nmap.exe&quot; -sV -O -&#45;osscan-guess -sC -T4 -p- -&#45;open -oX &quot;C:\\Users\\TRITON\\OneDrive\\Escritorio\\RedTeamPlatform - copia\\evidencias\\nmap_raw_199_123_1_3_20260525_185521.xml&quot; 199.123.1.3 -->
+<nmaprun scanner="nmap" args="&quot;C:\\Program Files (x86)\\Nmap\\nmap.exe&quot; -sV -O -&#45;osscan-guess -sC -T4 -p- -&#45;open -oX &quot;C:\\Users\\TRITON\\OneDrive\\Escritorio\\RedTeamPlatform - copia\\evidencias\\nmap_raw_199_123_1_3_20260525_185521.xml&quot; 199.123.1.3" start="1779756922" startstr="Mon May 25 18:55:22 2026" version="7.80" xmloutputversion="1.04">
+<scaninfo type="syn" protocol="tcp" numservices="65535" services="1-65535"/>

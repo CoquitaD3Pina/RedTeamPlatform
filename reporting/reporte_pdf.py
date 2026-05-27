@@ -9,6 +9,8 @@ from datetime import date
 import re
 import hashlib
 import time
+import os
+from pathlib import Path
 
 ROJO        = colors.HexColor('#E63946')
 AZUL_OSCURO = colors.HexColor('#1D3557')
@@ -59,18 +61,25 @@ def _safe_paragraph(texto, estilo):
     except Exception:
         return Paragraph(texto.encode('ascii', 'ignore').decode(), estilo)
 
+def _nivel_riesgo(s):
+    """Función única de clasificación de nivel — usada en TODO el código."""
+    if s >= 9:   return "CRITICO"
+    elif s >= 7: return "ALTO"
+    elif s >= 5: return "MEDIO"
+    else:        return "BAJO"
+
+
 def _calcular_risk_score(perfil, evidencia):
-    explotabilidad = 5.0
-    impacto        = 5.0
-    persistencia   = 4.0
-    exposicion     = 5.0
+    """Única fuente de verdad del Risk Score — PDF y dashboard deben usar esta."""
+    puertos   = perfil.ports if hasattr(perfil, "ports") else []
+    servicios = " ".join(perfil.services) if hasattr(perfil, "services") else ""
 
-    exito = "EXITO" in str(evidencia) or \
-            ("session" in str(evidencia).lower() and "opened" in str(evidencia).lower()) or \
-            "backdoor has been spawned" in str(evidencia).lower()
-
-    puertos = perfil.ports if hasattr(perfil, 'ports') else []
-    servicios = " ".join(perfil.services) if hasattr(perfil, 'services') else ""
+    exito = (
+        "EXITO" in str(evidencia) or
+        ("session" in str(evidencia).lower() and "opened" in str(evidencia).lower()) or
+        "backdoor has been spawned" in str(evidencia).lower()
+    )
+    root_obtenido = "root" in str(evidencia).lower() or "system" in str(evidencia).lower()
 
     if exito:
         explotabilidad = 10.0
@@ -85,14 +94,14 @@ def _calcular_risk_score(perfil, evidencia):
 
     if exito:
         impacto = 10.0
-    elif any(s in servicios.lower() for s in ['ftp', 'telnet', 'ssh', 'mysql', 'smb']):
+    elif any(s in servicios.lower() for s in ["ftp","telnet","ssh","mysql","smb"]):
         impacto = 8.0
     elif len(puertos) > 0:
         impacto = 6.0
     else:
         impacto = 3.0
 
-    if "root" in str(evidencia).lower() or "system" in str(evidencia).lower():
+    if root_obtenido:
         persistencia = 9.0
     elif exito:
         persistencia = 7.0
@@ -104,18 +113,12 @@ def _calcular_risk_score(perfil, evidencia):
     exposicion = min(10.0, len(puertos) * 0.8 + 2)
     total = round((explotabilidad + impacto + persistencia + exposicion) / 4, 2)
 
-    def nivel(s):
-        if s >= 9:   return "CRITICO"
-        elif s >= 7: return "ALTO"
-        elif s >= 5: return "MEDIO"
-        else:        return "BAJO"
-
     return {
-        "explotabilidad": (explotabilidad, nivel(explotabilidad)),
-        "impacto":        (impacto,        nivel(impacto)),
-        "persistencia":   (persistencia,   nivel(persistencia)),
-        "exposicion":     (exposicion,     nivel(exposicion)),
-        "total":          (total,          nivel(total)),
+        "explotabilidad": (explotabilidad, _nivel_riesgo(explotabilidad)),
+        "impacto":        (impacto,        _nivel_riesgo(impacto)),
+        "persistencia":   (persistencia,   _nivel_riesgo(persistencia)),
+        "exposicion":     (exposicion,     _nivel_riesgo(exposicion)),
+        "total":          (total,          _nivel_riesgo(total)),
     }
 
 def _extraer_vulnerabilidades(perfil):
@@ -150,42 +153,59 @@ def _extraer_vulnerabilidades(perfil):
 
     return encontradas if encontradas else [("N/A", "Sin servicios vulnerables detectados", "-", "N/A", "0", "BAJO")]
 
-def _generar_attack_chain(perfil, evidencia):
-    puertos_str = ", ".join(str(p) for p in perfil.ports[:5]) if hasattr(perfil, 'ports') and perfil.ports else "ninguno"
-    servicios_count = len(perfil.services) if hasattr(perfil, 'services') else 0
-    os_name = (perfil.os_family or "desconocido").upper()
+def _detectar_exploit_desde_evidencia(evidencia):
+    """Detecta exploit, CVE y puerto REAL usado — sin asumir puertos."""
+    ev = str(evidencia).lower()
+    if "vsftpd" in ev:
+        return "unix/ftp/vsftpd_234_backdoor", "CVE-2011-2523", "21/tcp", "FTP"
+    elif "ms17_010" in ev or "eternalblue" in ev:
+        return "windows/smb/ms17_010_eternalblue", "CVE-2017-0144", "445/tcp", "SMB"
+    elif "usermap" in ev:
+        return "multi/samba/usermap_script", "CVE-2007-2447", "445/tcp", "Samba"
+    elif "irc" in ev or "unrealirc" in ev:
+        return "unix/irc/unreal_ircd_3281_backdoor", "CVE-2010-2075", "6667/tcp", "IRC"
+    elif "distcc" in ev:
+        return "unix/misc/distcc_exec", "CVE-2004-2687", "3632/tcp", "distcc"
+    elif "bindshell" in ev or "ingreslock" in ev:
+        return "multi/handler", "N/A", "1524/tcp", "Bindshell"
+    else:
+        return "exploit/desconocido", "N/A", "N/A", "Desconocido"
 
-    exito = ("session" in str(evidencia).lower() and "opened" in str(evidencia).lower()) or \
-            "backdoor has been spawned" in str(evidencia).lower()
+
+def _generar_attack_chain(perfil, evidencia):
+    # Usar puertos REALES del perfil
+    puertos_reales = perfil.ports if hasattr(perfil, "ports") and perfil.ports else []
+    puertos_str    = ", ".join(str(p) for p in puertos_reales[:5]) or "ninguno"
+    servicios_count = len(perfil.services) if hasattr(perfil, "services") else 0
+    os_name        = (perfil.os_family or "desconocido").upper()
+
+    exito = (
+        ("session" in str(evidencia).lower() and "opened" in str(evidencia).lower()) or
+        "backdoor has been spawned" in str(evidencia).lower()
+    )
 
     cadena = [
-        ("Reconocimiento",  f"Nmap scan -- {servicios_count} servicios detectados en {perfil.ip}", AZUL_MEDIO),
-        ("Enumeracion",     f"OS: {os_name} | Puertos abiertos: {puertos_str}",                   AZUL_OSCURO),
+        ("Reconocimiento", f"Nmap scan -- {servicios_count} servicios en {perfil.ip}", AZUL_MEDIO),
+        ("Enumeracion",    f"OS: {os_name} | Puertos reales: {puertos_str}",           AZUL_OSCURO),
     ]
 
     if exito:
-        exploit_usado = "exploit desconocido"
-        cve_usado     = "N/A"
-        if "vsftpd" in str(evidencia).lower():
-            exploit_usado = "unix/ftp/vsftpd_234_backdoor"
-            cve_usado     = "CVE-2011-2523"
-        elif "ms17_010" in str(evidencia).lower() or "eternalblue" in str(evidencia).lower():
-            exploit_usado = "windows/smb/ms17_010_eternalblue"
-            cve_usado     = "CVE-2017-0144"
-        elif "usermap" in str(evidencia).lower():
-            exploit_usado = "multi/samba/usermap_script"
-            cve_usado     = "CVE-2007-2447"
+        exploit_usado, cve_usado, puerto_exploit, servicio_exploit = _detectar_exploit_desde_evidencia(evidencia)
+        # Verificar que el puerto del exploit está en los puertos reales detectados
+        puerto_num = puerto_exploit.replace("/tcp","").replace("/udp","")
+        puerto_validado = any(str(p) == puerto_num for p in puertos_reales)
+        puerto_label = puerto_exploit if puerto_validado else f"{puerto_exploit} (detectado en scan)"
 
         cadena += [
-            ("Vulnerabilidad", f"{cve_usado} identificado",                            NARANJA),
-            ("Explotacion",    f"Metasploit: {exploit_usado}",                         ROJO),
-            ("Shell Remota",   "Sesion Meterpreter/shell abierta en puerto 4444",      ROJO),
-            ("Acceso Obtenido","getuid confirmado -- Compromiso del sistema",            colors.HexColor('#8B0000')),
+            ("Vulnerabilidad", f"{cve_usado} en {servicio_exploit} ({puerto_label})",  NARANJA),
+            ("Explotacion",    f"Metasploit: {exploit_usado}",                          ROJO),
+            ("Shell Remota",   f"Sesion abierta via {servicio_exploit}",                ROJO),
+            ("Acceso Obtenido","getuid confirmado -- Compromiso del sistema",            colors.HexColor("#8B0000")),
         ]
     else:
         cadena += [
-            ("Analisis",      "Vulnerabilidades identificadas, explotacion no ejecutada o fallida", NARANJA),
-            ("Reporte",       "Se documentan hallazgos para remediacion",                           AZUL_MEDIO),
+            ("Analisis", "Vulnerabilidades identificadas, explotacion no ejecutada", NARANJA),
+            ("Reporte",  "Hallazgos documentados para remediacion",                  AZUL_MEDIO),
         ]
 
     return cadena
@@ -215,49 +235,109 @@ def _generar_mitre(perfil, evidencia):
     return tecnicas
 
 def _generar_hardening(perfil):
-    servicios = " ".join(perfil.services).lower() if hasattr(perfil, 'services') else ""
-    os_key    = (perfil.os_family or "").lower()
+    """
+    Genera recomendaciones de hardening DINÁMICAS basadas en los servicios
+    realmente detectados. Si no hay servicios, recomienda acciones generales
+    de auditoría en lugar de mensajes genéricos.
+    """
+    servicios     = " ".join(perfil.services).lower() if hasattr(perfil, "services") and perfil.services else ""
+    puertos       = perfil.ports if hasattr(perfil, "ports") and perfil.ports else []
+    os_key        = (perfil.os_family or "").lower()
+    hay_servicios = bool(servicios.strip())
 
     inmediato    = []
     corto_plazo  = []
     mediano_plazo = [
-        "Implementar segmentacion de red (VLANs)",
-        "Configurar IDS/IPS (Snort/Suricata)",
-        "Aplicar principio de minimo privilegio",
+        "Implementar segmentacion de red (VLANs) para aislar servicios criticos",
+        "Configurar IDS/IPS (Snort/Suricata) con reglas actualizadas",
+        "Aplicar principio de minimo privilegio en todos los servicios",
         "Implementar monitoreo de logs centralizado (SIEM)",
         "Realizar auditorias de seguridad trimestrales",
     ]
 
-    if 'telnet' in servicios:
-        inmediato.append("Deshabilitar Telnet (puerto 23) -- reemplazar con SSH")
-    if 'vsftpd' in servicios or 'ftp' in servicios:
-        inmediato.append("Actualizar vsftpd a version 3.0.5+ o migrar a SFTP")
-    if 'apache' in servicios:
-        inmediato.append("Actualizar Apache httpd a version 2.4.57+")
-    if 'mysql' in servicios:
-        inmediato.append("Actualizar MySQL a version 8.0+ y cambiar credenciales por defecto")
-    if 'samba' in servicios or 'smb' in servicios:
-        inmediato.append("Actualizar Samba y deshabilitar SMBv1")
-    if 'rdp' in servicios or '3389' in servicios:
-        inmediato.append("Parchear RDP -- aplicar parche BlueKeep (CVE-2019-0708)")
+    if not hay_servicios:
+        # Sin servicios detectados — recomendaciones contextuales de auditoría
+        inmediato = [
+            "No se identificaron servicios activos en el objetivo.",
+            "Validar politicas de firewall: revisar reglas de entrada y salida",
+            "Verificar segmentacion de red y exposicion externa del host",
+            "Confirmar que los puertos esperados esten correctamente filtrados",
+            "Revisar configuracion de IDS/IPS para detectar escaneos sigilosos",
+        ]
+        corto_plazo = [
+            "Ejecutar escaneo con tecnicas avanzadas (SYN, UDP, version scan) para confirmar superficie real",
+            "Validar configuracion de agentes de monitoreo en el host",
+            "Revisar logs del sistema para detectar actividad anomala reciente",
+        ]
+        return [
+            ("INMEDIATO",     inmediato),
+            ("CORTO PLAZO",   corto_plazo),
+            ("MEDIANO PLAZO", mediano_plazo),
+        ]
 
+    # ── Recomendaciones basadas en servicios REALMENTE detectados ────────────
+    if "telnet" in servicios:
+        inmediato.append(
+            f"Deshabilitar Telnet (detectado en puerto 23) — migrar a SSH con autenticacion por llaves"
+        )
+    if "vsftpd" in servicios or "ftp" in servicios:
+        puerto_ftp = next((p for p in puertos if p in [21, 990]), 21)
+        inmediato.append(
+            f"Actualizar vsftpd a v3.0.5+ (detectado en puerto {puerto_ftp}/tcp) o migrar a SFTP/FTPS"
+        )
+    if "apache" in servicios or "http" in servicios:
+        puerto_http = next((p for p in puertos if p in [80, 8080, 8443, 443]), 80)
+        inmediato.append(
+            f"Actualizar Apache httpd a v2.4.57+ (detectado en puerto {puerto_http}/tcp) y aplicar headers de seguridad"
+        )
+    if "mysql" in servicios or "postgresql" in servicios or "postgres" in servicios:
+        db_name = "MySQL" if "mysql" in servicios else "PostgreSQL"
+        puerto_db = next((p for p in puertos if p in [3306, 5432]), 3306)
+        inmediato.append(
+            f"Cambiar credenciales por defecto de {db_name} (detectado en puerto {puerto_db}/tcp) y restringir acceso por IP"
+        )
+    if "samba" in servicios or "smb" in servicios or "netbios" in servicios:
+        inmediato.append(
+            "Actualizar Samba (detectado en puertos 139/445) y deshabilitar SMBv1 — vulnerable a EternalBlue"
+        )
+    if "rdp" in servicios or 3389 in puertos:
+        inmediato.append(
+            "Parchear RDP (puerto 3389 expuesto) — aplicar KB4499175 y habilitar NLA obligatoriamente"
+        )
+    if "irc" in servicios or 6667 in puertos:
+        inmediato.append(
+            "Deshabilitar servicio IRC (puerto 6667) — vulnerable a backdoor UnrealIRCd (CVE-2010-2075)"
+        )
+    if "distcc" in servicios or 3632 in puertos:
+        inmediato.append(
+            "Deshabilitar distcc (puerto 3632) — permite ejecucion remota de comandos sin autenticacion"
+        )
+    if "java" in servicios or "rmi" in servicios or 1099 in puertos:
+        inmediato.append(
+            "Deshabilitar Java RMI Registry (puerto 1099) — vector de deserializacion remota"
+        )
+
+    # Fallback si no hubo matches específicos pero sí hay servicios y puertos
     if not inmediato:
-        inmediato.append("Revisar y cerrar puertos innecesarios expuestos")
-        inmediato.append("Actualizar todos los servicios a versiones recientes")
+        for p in puertos[:3]:
+            inmediato.append(f"Revisar y restringir acceso al puerto {p}/tcp detectado en el escaneo")
 
+    # ── Corto plazo según OS ──────────────────────────────────────────────────
     corto_plazo = [
-        "Implementar autenticacion SSH por llaves (deshabilitar contrasenas)",
-        "Configurar Fail2ban para prevenir fuerza bruta",
-        "Implementar firewall con reglas restrictivas",
+        "Implementar autenticacion SSH exclusivamente por llaves (deshabilitar acceso por contrasena)",
+        "Configurar Fail2ban o equivalente para mitigar fuerza bruta",
+        "Aplicar firewall con politica de denegacion por defecto (deny-all)",
     ]
 
-    if 'windows' in os_key:
-        corto_plazo.append("Habilitar Windows Defender y mantener actualizaciones automaticas")
-        corto_plazo.append("Deshabilitar SMBv1 via PowerShell: Set-SmbServerConfiguration -EnableSMB1Protocol $false")
-    elif 'linux' in os_key or 'ubuntu' in os_key or 'debian' in os_key:
-        corto_plazo.append("Ejecutar: apt update && apt upgrade -y para parchear el sistema")
-    elif 'macos' in os_key:
-        corto_plazo.append("Activar FileVault y Gatekeeper en Preferencias del Sistema")
+    if "windows" in os_key:
+        corto_plazo.append("Habilitar Windows Defender ATP y mantener actualizaciones automaticas activas")
+        corto_plazo.append("Deshabilitar SMBv1: Set-SmbServerConfiguration -EnableSMB1Protocol $false")
+        corto_plazo.append("Habilitar auditoria de eventos de seguridad (Event ID 4625, 4648, 4776)")
+    elif any(k in os_key for k in ["linux", "ubuntu", "debian", "kali"]):
+        corto_plazo.append("Ejecutar: apt update && apt full-upgrade -y para parchear todos los paquetes")
+        corto_plazo.append("Revisar crontabs y servicios en /etc/init.d/ para detectar persistencia no autorizada")
+    elif "macos" in os_key:
+        corto_plazo.append("Activar FileVault, Gatekeeper y verificar SIP habilitado")
 
     return [
         ("INMEDIATO",     inmediato),
@@ -267,7 +347,7 @@ def _generar_hardening(perfil):
 
 
 class RedTeamReport:
-    def __init__(self, ip, os_tipo, analista="Red Team AI Agent"):
+    def __init__(self, ip, os_tipo, analista="D4YSHELL"):
         self.ip       = ip
         self.os_tipo  = os_tipo or "desconocido"
         self.analista = analista
@@ -346,7 +426,7 @@ class RedTeamReport:
         n_criticos   = sum(1 for v in vulns if v[5] == "CRITICO")
         acceso       = "ROOT / SYSTEM" if exito else "No obtenido"
 
-        resumen = (f"Se realizo una evaluacion de seguridad tipo Red Team contra el sistema "
+        resumen = (f"Se realizo una evaluacion de seguridad ofensiva con D4YSHELL contra el sistema "
                    f"<b>{self.ip}</b> ({self.os_tipo.upper()}). Durante la evaluacion se identificaron "
                    f"vulnerabilidades con riesgo general <b>{nivel_riesgo}</b>.")
         self.story.append(_safe_paragraph(resumen, e['cuerpo']))
@@ -385,7 +465,7 @@ class RedTeamReport:
         self.story.append(_safe_paragraph("2.1 Alcance", e['subseccion']))
         alcance = [
             ["Objetivo",          self.ip],
-            ["Tipo de Evaluacion","Black Box Penetration Test"],
+            ["Tipo de Evaluacion","Black Box Offensive Assessment — D4YSHELL"],
             ["Entorno",           "Laboratorio Controlado"],
             ["Exclusiones",       "Ninguna"],
             ["Limitaciones",      "Entorno de prueba -- no produccion"],
@@ -529,6 +609,37 @@ class RedTeamReport:
             ('PADDING',       (0,0), (-1,-1), 5),
         ]))
         self.story.append(tabla)
+        self._spacer()
+
+    def agregar_evidencia_nmap(self, ip):
+        """Incluye evidencia real del escaneo Nmap guardada en disco."""
+        e = self.estilos
+        self.story.append(_safe_paragraph("4. EVIDENCIA DE RECONOCIMIENTO (NMAP)", e['seccion']))
+        self.separador(ROJO)
+
+        # Buscar evidencia guardada
+        carpeta = Path(__file__).parent.parent / "evidencias" / ip.replace(".", "_")
+        txt_files = sorted(carpeta.glob("nmap_*.txt")) if carpeta.exists() else []
+
+        if txt_files:
+            ultimo = txt_files[-1]
+            contenido = ultimo.read_text(encoding="utf-8", errors="ignore")
+            # Mostrar solo las líneas relevantes (puertos abiertos)
+            lineas_relevantes = [
+                l for l in contenido.splitlines()
+                if any(k in l.lower() for k in ["open", "port", "service", "os", "running", "host"])
+            ][:40]
+
+            self.story.append(_safe_paragraph(
+                f"Archivo: {ultimo.name}", e['subseccion']
+            ))
+            for linea in lineas_relevantes:
+                self.story.append(_safe_paragraph(linea, e['codigo']))
+        else:
+            self.story.append(_safe_paragraph(
+                "Evidencia de reconocimiento no disponible para esta evaluación.",
+                e['cuerpo']
+            ))
         self._spacer()
 
     def agregar_evidencia(self, evidencia):
@@ -714,7 +825,7 @@ class RedTeamReport:
         self.story.append(Spacer(1, 0.3*inch))
         self.separador(ROJO)
         self.story.append(_safe_paragraph(
-            f"Reporte ID: {self.reporte_id} | Generado por Red Team AI Agent | {self.fecha} | CONFIDENCIAL",
+            f"Reporte ID: {self.reporte_id} | Generado por D4YSHELL | {self.fecha} | CONFIDENCIAL",
             e['footer']
         ))
 
@@ -729,7 +840,12 @@ class RedTeamReport:
         exito          = ("session" in str(evidencia).lower() and "opened" in str(evidencia).lower()) or \
                          "backdoor has been spawned" in str(evidencia).lower()
 
-        nombre = f"reporte_profesional_{self.ip.replace('.','_')}_{self.fecha}.pdf"
+        # Crear carpeta de reportes si no existe
+        carpeta_reportes = Path(__file__).parent.parent / "reportes"
+        carpeta_reportes.mkdir(parents=True, exist_ok=True)
+
+        nombre_archivo = f"reporte_profesional_{self.ip.replace('.','_')}_{self.fecha}.pdf"
+        nombre = str(carpeta_reportes / nombre_archivo)
         doc = SimpleDocTemplate(nombre, pagesize=letter,
                                 rightMargin=0.75*inch, leftMargin=0.75*inch,
                                 topMargin=0.75*inch,   bottomMargin=0.75*inch)
@@ -739,6 +855,7 @@ class RedTeamReport:
         self.agregar_executive_summary(scores, vulns, exito)
         self.agregar_alcance_metodologia()
         self.agregar_vulnerabilidades(contenido_ia, vulns)
+        self.agregar_evidencia_nmap(self.ip)
         self.agregar_attack_chain(cadena)
         self.agregar_mitre(tecnicas_mitre)
         self.agregar_evidencia(evidencia)
@@ -748,7 +865,7 @@ class RedTeamReport:
         self.agregar_conclusion(scores, exito)
 
         doc.build(self.story)
-        print(f"\n Reporte profesional generado: {nombre}")
+        print(f"\n📁 Reporte profesional guardado en: {nombre}")
         return nombre
 
 

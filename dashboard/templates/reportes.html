@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block title %}Mis Reportes | D4YSHELL{% endblock %}
+{% block breadcrumb %}mis reportes{% endblock %}
+{% block header_title %}Mis reportes{% endblock %}
+{% block header_subtitle %}PDFs generados por tus escaneos — solo tú puedes verlos{% endblock %}
+
+{% block styles %}
+<style>
+.reports-empty {
+    text-align: center;
+    padding: 5rem 0;
+    color: var(--gray3);
+}
+.reports-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+}
+.report-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+}
+.report-row:last-child { border-bottom: none; }
+.report-row:hover { background: rgba(255,255,255,0.02); }
+.pdf-ico {
+    width: 38px; height: 38px;
+    background: rgba(230,57,70,0.08);
+    border: 1px solid rgba(230,57,70,0.18);
+    border-radius: 7px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+}
+.pdf-ico i { color: var(--red); font-size: 1rem; }
+.report-info { flex: 1; min-width: 0; }
+.report-ip {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--white);
+}
+.report-meta {
+    font-size: 0.72rem;
+    color: var(--gray3);
+    margin-top: 2px;
+    display: flex;
+    gap: 1rem;
+}
+.report-filename {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--gray3);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 320px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% if reportes %}
+<div class="reports-list">
+    {% for rep in reportes %}
+    {% set parts = rep.filename.replace('reporte_profesional_','').replace('.pdf','').split('_') %}
+    {% set ip_str = parts[0]~'.'~parts[1]~'.'~parts[2]~'.'~parts[3] if parts|length >= 4 else rep.filename %}
+    <div class="report-row">
+        <div class="pdf-ico"><i class="fa-solid fa-file-pdf"></i></div>
+        <div class="report-info">
+            <div class="report-ip">{{ ip_str }}</div>
+            <div class="report-meta">
+                <span><i class="fa-regular fa-clock" style="margin-right:3px"></i>{{ rep.mtime }}</span>
+                <span><i class="fa-solid fa-weight-hanging" style="margin-right:3px"></i>{{ rep.size }}</span>
+            </div>
+            <div class="report-filename">{{ rep.filename }}</div>
+        </div>
+        <a href="/reportes/descargar/{{ rep.filename }}" class="btn btn-primary" style="flex-shrink:0">
+            <i class="fa-solid fa-download"></i> Descargar
+        </a>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="reports-empty">
+    <i class="fa-solid fa-folder-open" style="font-size:2.5rem;margin-bottom:1rem;display:block;opacity:0.3"></i>
+    <div style="font-size:0.9rem;font-weight:500;color:var(--gray2);margin-bottom:0.35rem">No tienes reportes aún</div>
+    <div style="font-size:0.8rem;margin-bottom:1.5rem">Ejecuta un escaneo para generar tu primer reporte PDF</div>
+    <a href="/nuevo-scan" class="btn btn-primary"><i class="fa-solid fa-crosshairs"></i> Lanzar escaneo</a>
+</div>
+{% endif %}
+{% endblock %}

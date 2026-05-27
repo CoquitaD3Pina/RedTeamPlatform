@@ -25,7 +25,7 @@ def ejecutar_con_polling(comando, path_salida, marcadores_exito=None, timeout=No
     tiempo_inicio = time.time()
     while time.time() - tiempo_inicio < timeout:
         # Leer contenido actual del archivo
-        salida, _ = ssh.ejecutar_y_read_cmd = ssh.ejecutar_y_leer(f"cat {path_salida}")
+        salida, _ = ssh.ejecutar_y_leer(f"cat {path_salida}")
         salida = salida.strip()
         
         # Evaluar marcadores de éxito

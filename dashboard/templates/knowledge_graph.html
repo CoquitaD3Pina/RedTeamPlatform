@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block title %}Knowledge Graph | D4YSHELL{% endblock %}
+{% block breadcrumb %}knowledge graph{% endblock %}
+{% block header_title %}Knowledge Graph{% endblock %}
+{% block header_subtitle %}Base de conocimiento auto-aprendida — exploits priorizados por tasa de éxito{% endblock %}
+
+{% block styles %}
+<style>
+.kg-info-banner {
+    background: rgba(153,102,255,0.07);
+    border: 1px solid rgba(153,102,255,0.2);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    gap: 0.85rem;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    font-size: 0.82rem;
+    color: var(--gray2);
+    line-height: 1.6;
+}
+.kg-info-banner i { color: #b197fc; font-size: 1.1rem; margin-top: 1px; flex-shrink: 0; }
+.exploit-tag {
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: #ff6b6b;
+    background: rgba(230,57,70,0.08);
+    padding: 2px 7px;
+    border-radius: 4px;
+    border: 1px solid rgba(230,57,70,0.2);
+}
+.success-count {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #51cf66;
+    font-family: var(--mono);
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="kg-info-banner">
+    <i class="fa-solid fa-brain"></i>
+    <span>Cada exploit exitoso actualiza automáticamente esta tabla. En futuras ejecuciones, el agente IA prioriza los módulos con mayor <strong style="color:#b197fc">success_count</strong> para el OS y servicio detectado, acelerando el tiempo de compromiso.</span>
+</div>
+
+<div class="section-label" style="font-size:0.72rem;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--gray3);margin-bottom:0.75rem;display:flex;align-items:center;gap:0.5rem">
+    <i class="fa-solid fa-ranking-star" style="color:var(--red)"></i> Ranking de exploits aprendidos
+    <span style="flex:1;height:1px;background:var(--border)"></span>
+</div>
+<div class="tbl-wrap">
+    <table>
+        <thead><tr>
+            <th>OS Family</th><th>Servicio</th><th>Módulo Metasploit</th><th style="text-align:center">Éxitos</th>
+        </tr></thead>
+        <tbody>
+        {% if graph %}
+            {% for item in graph %}
+            <tr>
+                <td>
+                    {% if 'win' in item.os_family.lower() %}
+                        <span style="color:#74c0fc"><i class="fa-brands fa-windows"></i> Windows</span>
+                    {% elif 'lin' in item.os_family.lower() %}
+                        <span style="color:#ffd43b"><i class="fa-brands fa-linux"></i> Linux</span>
+                    {% else %}
+                        <span style="color:var(--gray3)">{{ item.os_family|upper }}</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-purple">{{ item.service|upper }}</span></td>
+                <td><span class="exploit-tag">{{ item.exploit_name }}</span></td>
+                <td style="text-align:center"><span class="success-count">{{ item.success_count }}</span></td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr><td colspan="4" style="text-align:center;color:var(--gray3);padding:3.5rem 0;font-size:0.82rem">
+                El Knowledge Graph se poblará automáticamente cuando se registren exploits exitosos.
+            </td></tr>
+        {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

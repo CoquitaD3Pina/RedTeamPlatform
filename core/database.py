@@ -4,7 +4,7 @@ import os
 from utils.logger import log
 
 class RedTeamDB:
-    def __init__(self, db_path="redteam.db"):
+    def __init__(self, db_path="d4yshell.db"):
         self.db_path = db_path
         self._inicializar_bd()
 
@@ -62,6 +62,21 @@ class RedTeamDB:
                     exploit_name TEXT,
                     success_count INTEGER DEFAULT 0,
                     UNIQUE(os_family, service, exploit_name)
+                )
+                """)
+
+                # Tabla de resultados OSINT
+                cursor.execute("""
+                CREATE TABLE IF NOT EXISTS osint_results (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    target_ip TEXT,
+                    hostname TEXT,
+                    os_por_ttl TEXT,
+                    whois TEXT,
+                    banners TEXT,
+                    dns_data TEXT,
+                    resumen TEXT,
+                    timestamp DATETIME DEFAULT CURRENT_TIMESTAMP
                 )
                 """)
                 conn.commit()
@@ -154,4 +169,97 @@ class RedTeamDB:
                 return cursor.fetchall()
         except Exception as e:
             log.error(f"Error obteniendo ranking de exploits: {e}")
+            return []
+
+    def registrar_osint(self, ip, osint_data: dict):
+        """Guarda los resultados OSINT de una IP en la base de datos."""
+        try:
+            with self._conectar() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                INSERT INTO osint_results
+                    (target_ip, hostname, os_por_ttl, whois, banners, dns_data, resumen)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """, (
+                    ip,
+                    osint_data.get("hostname", ""),
+                    osint_data.get("os_por_ttl", ""),
+                    osint_data.get("whois", ""),
+                    json.dumps(osint_data.get("banners", {})),
+                    json.dumps(osint_data.get("dns", {})),
+                    json.dumps(osint_data.get("resumen", [])),
+                ))
+                conn.commit()
+                log.info(f"💾 OSINT para {ip} guardado en base de datos.")
+        except Exception as e:
+            log.error(f"Error registrando OSINT en BD: {e}")
+
+    def obtener_todos_los_scans(self):
+        """Retorna todos los registros de scans para el dashboard."""
+        try:
+            with self._conectar() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                SELECT ip, os_family, services, ports, timestamp
+                FROM scans ORDER BY timestamp DESC
+                """)
+                return cursor.fetchall()
+        except Exception as e:
+            log.error(f"Error obteniendo scans: {e}")
+            return []
+
+    def obtener_exploits_por_ip(self, ip):
+        """Retorna todos los exploits intentados contra una IP."""
+        try:
+            with self._conectar() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                SELECT exploit_name, cve, exito, evidencia, timestamp
+                FROM exploits WHERE target_ip = ? ORDER BY timestamp DESC
+                """, (ip,))
+                return cursor.fetchall()
+        except Exception as e:
+            log.error(f"Error obteniendo exploits de {ip}: {e}")
+            return []
+
+    def obtener_credenciales_por_ip(self, ip):
+        """Retorna credenciales encontradas para una IP."""
+        try:
+            with self._conectar() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                SELECT service, username, password, timestamp
+                FROM credentials WHERE target_ip = ? ORDER BY timestamp DESC
+                """, (ip,))
+                return cursor.fetchall()
+        except Exception as e:
+            log.error(f"Error obteniendo credenciales de {ip}: {e}")
+            return []
+
+    def obtener_osint_por_ip(self, ip):
+        """Retorna datos OSINT almacenados para una IP."""
+        try:
+            with self._conectar() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                SELECT hostname, os_por_ttl, whois, banners, dns_data, resumen, timestamp
+                FROM osint_results WHERE target_ip = ? ORDER BY timestamp DESC LIMIT 1
+                """, (ip,))
+                return cursor.fetchone()
+        except Exception as e:
+            log.error(f"Error obteniendo OSINT de {ip}: {e}")
+            return None
+
+    def obtener_knowledge_graph(self):
+        """Retorna todo el knowledge graph ordenado por éxitos."""
+        try:
+            with self._conectar() as conn:
+                cursor = conn.cursor()
+                cursor.execute("""
+                SELECT os_family, service, exploit_name, success_count
+                FROM knowledge_graph ORDER BY success_count DESC
+                """)
+                return cursor.fetchall()
+        except Exception as e:
+            log.error(f"Error obteniendo knowledge graph: {e}")
             return []

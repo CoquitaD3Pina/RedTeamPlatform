@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///C:/Program Files (x86)/Nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.80 scan initiated Mon May 25 14:13:21 2026 as: &quot;C:\\Program Files (x86)\\Nmap\\nmap.exe&quot; -sV -O -&#45;osscan-guess -sC -T4 -p- -&#45;open -oX &quot;c:\\Users\\TRITON\\OneDrive\\Escritorio\\RedTeamPlatform - copia\\evidencias\\nmap_raw_192_168_56_103_20260525_141321.xml&quot; 192.168.56.103 -->
+<nmaprun scanner="nmap" args="&quot;C:\\Program Files (x86)\\Nmap\\nmap.exe&quot; -sV -O -&#45;osscan-guess -sC -T4 -p- -&#45;open -oX &quot;c:\\Users\\TRITON\\OneDrive\\Escritorio\\RedTeamPlatform - copia\\evidencias\\nmap_raw_192_168_56_103_20260525_141321.xml&quot; 192.168.56.103" start="1779740001" startstr="Mon May 25 14:13:21 2026" version="7.80" xmloutputversion="1.04">
+<scaninfo type="syn" protocol="tcp" numservices="65535" services="1-65535"/>
+<verbose level="0"/>
+<debugging level="0"/>
+<runstats><finished time="1779740004" timestr="Mon May 25 14:13:24 2026" elapsed="3.48" summary="Nmap done at Mon May 25 14:13:24 2026; 1 IP address (0 hosts up) scanned in 3.48 seconds" exit="success"/><hosts up="0" down="1" total="1"/>
+</runstats>
+</nmaprun>

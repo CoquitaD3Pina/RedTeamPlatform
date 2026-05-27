@@ -30,7 +30,7 @@ class ColoredFormatter(logging.Formatter):
         formatter = logging.Formatter(log_fmt, datefmt="%H:%M:%S")
         return formatter.format(record)
 
-def setup_logger(name="RedTeam"):
+def setup_logger(name="D4YSHELL"):
     logger = logging.getLogger(name)
     if not logger.handlers:
         logger.setLevel(logging.DEBUG)
@@ -42,7 +42,7 @@ def setup_logger(name="RedTeam"):
         logger.addHandler(ch)
         
         # Handler para archivo
-        fh = logging.FileHandler("redteam.log", encoding="utf-8")
+        fh = logging.FileHandler("d4yshell.log", encoding="utf-8")
         fh.setLevel(logging.DEBUG)
         file_formatter = logging.Formatter('[%(asctime)s] %(levelname)s [%(filename)s:%(lineno)d]: %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
         fh.setFormatter(file_formatter)

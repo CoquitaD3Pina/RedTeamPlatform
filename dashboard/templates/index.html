@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | RedTeam Platform{% endblock %}
+{% block breadcrumb %}dashboard{% endblock %}
+{% block header_title %}Dashboard de operaciones{% endblock %}
+{% block header_subtitle %}Resumen de hosts evaluados, vulnerabilidades y compromisos activos{% endblock %}
+
+{% block styles %}
+<style>
+.stats-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-bottom: 1.75rem; }
+.stat-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem 1.5rem; position: relative; overflow: hidden; }
+.stat-card::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; }
+.stat-card.c-red::before    { background: var(--red); }
+.stat-card.c-blue::before   { background: #4a90e2; }
+.stat-card.c-green::before  { background: #28a745; }
+.stat-card.c-yellow::before { background: #ffc107; }
+.stat-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--gray3); margin-bottom: 0.5rem; }
+.stat-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+.stat-card.c-red    .stat-value { color: #ff6b6b; }
+.stat-card.c-blue   .stat-value { color: #74c0fc; }
+.stat-card.c-green  .stat-value { color: #51cf66; }
+.stat-card.c-yellow .stat-value { color: #ffd43b; }
+
+.quick-scan-bar { background: var(--bg2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; margin-bottom: 1.75rem; display: flex; align-items: center; gap: 1rem; }
+.qs-label { font-size: 0.78rem; font-weight: 600; color: var(--gray2); white-space: nowrap; }
+.qs-input-wrap { flex: 1; display: flex; gap: 0; }
+.qs-prefix { background: var(--bg3); border: 1px solid var(--border2); border-right: none; border-radius: 6px 0 0 6px; padding: 0.5rem 0.75rem; font-family: var(--mono); font-size: 0.75rem; color: var(--gray3); display: flex; align-items: center; }
+.qs-input { flex:1; background: var(--bg3); border: 1px solid var(--border2); border-left: none; border-radius: 0 6px 6px 0; padding: 0.5rem 0.75rem; font-family: var(--mono); font-size: 0.85rem; font-weight: 600; color: var(--white); outline: none; }
+.qs-input:focus { border-color: rgba(230,57,70,0.5); }
+
+.section-label { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--gray3); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+.section-label::after { content:''; flex:1; height:1px; background: var(--border); }
+
+.ip-text { font-family: var(--mono); font-size: 0.8rem; font-weight: 600; color: var(--white); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="stats-grid">
+    <div class="stat-card c-blue">
+        <div class="stat-label">Targets evaluados</div>
+        <div class="stat-value">{{ stats.total_targets }}</div>
+    </div>
+    <div class="stat-card c-red">
+        <div class="stat-label">Exploits lanzados</div>
+        <div class="stat-value">{{ stats.total_exploits_intentos }}</div>
+    </div>
+    <div class="stat-card c-green">
+        <div class="stat-label">Compromisos exitosos</div>
+        <div class="stat-value">{{ stats.total_exploits_exito }}</div>
+    </div>
+    <div class="stat-card c-yellow">
+        <div class="stat-label">Credenciales obtenidas</div>
+        <div class="stat-value">{{ stats.total_credentials }}</div>
+    </div>
+</div>
+
+<div class="quick-scan-bar">
+    <span class="qs-label"><i class="fa-solid fa-crosshairs" style="color:var(--red);margin-right:6px"></i>Escaneo rápido</span>
+    <div class="qs-input-wrap">
+        <span class="qs-prefix">target</span>
+        <input id="quick-ip" class="qs-input" type="text" placeholder="192.168.1.10" autocomplete="off" spellcheck="false">
+    </div>
+    <button class="btn btn-primary" onclick="quickScan()"><i class="fa-solid fa-bolt"></i> Iniciar</button>
+    <a href="/nuevo-scan" class="btn btn-ghost">Opciones avanzadas</a>
+</div>
+
+<div class="section-label"><i class="fa-solid fa-server" style="color:var(--red)"></i> Historial de objetivos</div>
+<div class="tbl-wrap">
+    <table>
+        <thead><tr>
+            <th>Dirección IP</th><th>Sistema operativo</th><th>Puertos</th><th>Servicios</th><th>Fecha</th><th style="text-align:right">Acciones</th>
+        </tr></thead>
+        <tbody>
+        {% if scans %}
+            {% for scan in scans %}
+            <tr>
+                <td><span class="ip-text">{{ scan.ip }}</span></td>
+                <td>
+                    {% if 'win' in scan.os_family.lower() %}
+                        <span style="color:#74c0fc"><i class="fa-brands fa-windows"></i> Windows</span>
+                    {% elif 'lin' in scan.os_family.lower() or 'ubuntu' in scan.os_family.lower() %}
+                        <span style="color:#ffd43b"><i class="fa-brands fa-linux"></i> Linux</span>
+                    {% else %}
+                        <span style="color:var(--gray3)"><i class="fa-solid fa-microchip"></i> {{ scan.os_family|upper }}</span>
+                    {% endif %}
+                </td>
+                <td><span class="badge badge-blue">{{ scan.ports_count }} puertos</span></td>
+                <td><span class="badge badge-purple">{{ scan.services_count }} servicios</span></td>
+                <td style="color:var(--gray3);font-size:0.78rem;font-family:var(--mono)">{{ scan.timestamp }}</td>
+                <td style="text-align:right">
+                    <a href="/target/{{ scan.ip }}" class="btn btn-ghost" style="font-size:0.75rem;padding:0.35rem 0.75rem"><i class="fa-solid fa-eye"></i> Ver</a>
+                </td>
+            </tr>
+            {% endfor %}
+        {% else %}
+            <tr><td colspan="6" style="text-align:center;color:var(--gray3);padding:3.5rem 0;font-size:0.82rem">
+                Sin objetivos registrados — lanza tu primer escaneo para ver resultados aquí.
+            </td></tr>
+        {% endif %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function quickScan() {
+    const ip = document.getElementById('quick-ip').value.trim();
+    if (!ip) return;
+    fetch('/scan', { method:'POST', headers:{'Content-Type':'application/x-www-form-urlencoded'}, body:'ip='+encodeURIComponent(ip) })
+        .then(() => { window.location.href = '/logs'; });
+}
+document.getElementById('quick-ip').addEventListener('keydown', e => { if(e.key==='Enter') quickScan(); });
+</script>
+{% endblock %}
