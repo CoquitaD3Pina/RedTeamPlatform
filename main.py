@@ -7,7 +7,8 @@ from ai.attack_planner import analizar
 from exploits.exploit_dispatcher import despachar_exploit
 from bruteforce.hydra_agent import ejecutar_fuerza_bruta
 from post_exploitation.post_exploit import ejecutar_post_explotacion
-from reporting.reporte_pdf import RedTeamReport
+from reporting.reporte_pdf import RedTeamReport, _calcular_risk_score, _extraer_vulnerabilidades
+from reporting.reporte_ejecutivo import ReporteEjecutivo
 from osint.osint_agent import ejecutar_osint
 
 
@@ -24,6 +25,16 @@ def parse_args():
         "--modules",
         default="all",
         help="Módulos a ejecutar separados por coma (recon,osint,ai,brute,exploit,post,report) o 'all'"
+    )
+    parser.add_argument(
+        "--empresa",
+        default="",
+        help="Nombre de la empresa cliente (aparece en el reporte ejecutivo)"
+    )
+    parser.add_argument(
+        "--consultor",
+        default="D4YSHELL",
+        help="Nombre del consultor que firma el reporte ejecutivo"
     )
     return parser.parse_args()
 
@@ -126,15 +137,38 @@ def main():
         else:
             log.warning("Post-explotación omitida: no se detectó acceso exitoso en la fase anterior.")
 
-    # FASE 5 — REPORTE PDF
+    # FASE 5 — REPORTES PDF (técnico + ejecutivo)
     if modulos_config["reporte_pdf"] and perfil:
-        log.info("FASE 5 — Generando reporte de evaluación...")
+        log.info("FASE 5 — Generando reportes de evaluación...")
+
+        exito = (
+            ("session" in str(evidencia).lower() and "opened" in str(evidencia).lower()) or
+            "backdoor has been spawned" in str(evidencia).lower()
+        )
+
+        # ── Reporte Técnico ──────────────────────────────────────────────────
         try:
             reporte = RedTeamReport(target_ip, perfil.os_family)
-            reporte.generar(analisis, evidencia, perfil, credenciales)
-            log.info("Reporte generado exitosamente.")
+            ruta_tecnico = reporte.generar(analisis, evidencia, perfil, credenciales)
+            log.info(f"Reporte técnico generado: {ruta_tecnico}")
         except Exception as e:
-            log.error(f"El reporte no pudo generarse: {e}")
+            log.error(f"El reporte técnico no pudo generarse: {e}")
+
+        # ── Reporte Ejecutivo ────────────────────────────────────────────────
+        try:
+            scores = _calcular_risk_score(perfil, evidencia)
+            vulns  = _extraer_vulnerabilidades(perfil)
+
+            rep_exec = ReporteEjecutivo(
+                ip             = target_ip,
+                os_tipo        = perfil.os_family,
+                nombre_empresa = args.empresa or "Empresa cliente",
+                consultor      = args.consultor,
+            )
+            ruta_ejecutivo = rep_exec.generar(scores, vulns, exito, credenciales, perfil)
+            log.info(f"Reporte ejecutivo generado: {ruta_ejecutivo}")
+        except Exception as e:
+            log.error(f"El reporte ejecutivo no pudo generarse: {e}")
 
     log.info("=" * 60)
     log.info("  EVALUACIÓN COMPLETADA")
