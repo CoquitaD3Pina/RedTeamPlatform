@@ -1,7 +1,7 @@
 import sqlite3
 import json
 import os
-from utils.logger import log
+from d4y_utils.logger import log
 
 class RedTeamDB:
     def __init__(self, db_path="d4yshell.db"):

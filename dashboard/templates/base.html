@@ -328,6 +328,56 @@
             color: var(--gray3);
         }
 
+        /* ── AUTH UI ── */
+        .sidebar-user {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 10px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+        }
+        .sidebar-user-info {
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            font-size: 0.75rem;
+            color: var(--gray2);
+            font-weight: 500;
+        }
+        .sidebar-user-info i {
+            color: var(--red);
+            font-size: 0.75rem;
+        }
+        .sidebar-logout {
+            color: var(--gray3);
+            font-size: 0.8rem;
+            padding: 5px 6px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: color 0.2s, background 0.2s;
+        }
+        .sidebar-logout:hover {
+            color: var(--red);
+            background: var(--red-dim);
+        }
+        .topbar-logout {
+            color: var(--gray3);
+            font-size: 0.85rem;
+            padding: 5px 8px;
+            border-radius: 4px;
+            text-decoration: none;
+            border: 1px solid var(--border);
+            transition: color 0.2s, border-color 0.2s, background 0.2s;
+            display: flex;
+            align-items: center;
+        }
+        .topbar-logout:hover {
+            color: var(--red);
+            border-color: rgba(230,57,70,0.3);
+            background: var(--red-dim);
+        }
+
         {% block styles %}{% endblock %}
     </style>
 </head>
@@ -373,6 +423,16 @@
                 <div class="status-indicator online" style="background:#4a90e2"></div>
                 <span>Ollama conectado</span>
             </div>
+            <!-- Usuario activo + logout -->
+            <div class="sidebar-user">
+                <div class="sidebar-user-info">
+                    <i class="fa-solid fa-user-ninja"></i>
+                    <span>{{ current_user.id }}</span>
+                </div>
+                <a href="/logout" class="sidebar-logout" title="Cerrar sesión">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
+            </div>
         </div>
     </div>
 
@@ -386,7 +446,10 @@
             </div>
             <div class="topbar-right">
                 {% block topbar_right %}
-                <span class="badge badge-gray"><i class="fa-solid fa-user-ninja"></i> operator</span>
+                <span class="badge badge-gray"><i class="fa-solid fa-user-ninja"></i> {{ current_user.id }}</span>
+                <a href="/logout" class="topbar-logout" title="Cerrar sesión">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                </a>
                 {% endblock %}
             </div>
         </div>

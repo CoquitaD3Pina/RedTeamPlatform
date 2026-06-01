@@ -1,7 +1,7 @@
 import sys
 import argparse
 import config
-from utils.logger import log
+from d4y_utils.logger import log
 from recon.nmap_agent import escanear
 from ai.attack_planner import analizar
 from exploits.exploit_dispatcher import despachar_exploit

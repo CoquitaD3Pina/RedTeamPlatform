@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE nmaprun>
+<?xml-stylesheet href="file:///C:/Program Files (x86)/Nmap/nmap.xsl" type="text/xsl"?>
+<!-- Nmap 7.80 scan initiated Sat May 30 04:55:02 2026 as: &quot;C:\\Program Files (x86)\\Nmap\\nmap.exe&quot; -sV -O -&#45;osscan-guess -sC -T4 -p- -&#45;open -oX C:\\Users\\TRITON\\OneDrive\\Escritorio\\D4yShell\\evidencias\\nmap_raw_192_168_100_32_20260530_045502.xml 192.168.100.32 -->
+<nmaprun scanner="nmap" args="&quot;C:\\Program Files (x86)\\Nmap\\nmap.exe&quot; -sV -O -&#45;osscan-guess -sC -T4 -p- -&#45;open -oX C:\\Users\\TRITON\\OneDrive\\Escritorio\\D4yShell\\evidencias\\nmap_raw_192_168_100_32_20260530_045502.xml 192.168.100.32" start="1780138502" startstr="Sat May 30 04:55:02 2026" version="7.80" xmloutputversion="1.04">
+<scaninfo type="syn" protocol="tcp" numservices="65535" services="1-65535"/>
+<verbose level="0"/>
+<debugging level="0"/>
+<runstats><finished time="1780138505" timestr="Sat May 30 04:55:05 2026" elapsed="3.02" summary="Nmap done at Sat May 30 04:55:05 2026; 0 IP addresses (0 hosts up) scanned in 3.02 seconds" exit="error" errormsg="dnet: Failed to open device eth8"/><hosts up="0" down="0" total="0"/>
+</runstats>
+</nmaprun>

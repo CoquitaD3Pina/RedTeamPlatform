@@ -1,6 +1,6 @@
 import time
 from core.ssh_manager import KaliSSH
-from utils.logger import log
+from d4y_utils.logger import log
 import config
 
 def ejecutar_con_polling(comando, path_salida, marcadores_exito=None, timeout=None, intervalo_polling=5):

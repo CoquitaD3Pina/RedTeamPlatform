@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D4YSHELL — Registro</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg:       #0a0a0a;
+            --bg2:      #111111;
+            --bg3:      #161616;
+            --bg4:      #1c1c1c;
+            --red:      #e63946;
+            --red2:     #c1121f;
+            --red-glow: rgba(230,57,70,0.18);
+            --red-dim:  rgba(230,57,70,0.08);
+            --white:    #f8f9fa;
+            --gray1:    #e9ecef;
+            --gray2:    #adb5bd;
+            --gray3:    #6c757d;
+            --border:   rgba(255,255,255,0.06);
+            --border2:  rgba(255,255,255,0.1);
+            --sans:     'Inter', system-ui, sans-serif;
+            --mono:     'IBM Plex Mono', monospace;
+        }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow-x: hidden;
+            padding: 2rem 1rem;
+        }
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(230,57,70,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(230,57,70,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+        body::after {
+            content: '';
+            position: fixed;
+            top: -200px; left: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(230,57,70,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .wrap {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 520px;
+            animation: fadeUp 0.4s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2rem;
+            justify-content: center;
+        }
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: var(--red);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(230,57,70,0.4);
+        }
+        .logo-icon i { color: #fff; font-size: 1rem; }
+        .logo-name { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.5px; }
+        .logo-ver  { font-size: 0.7rem; color: var(--gray3); font-family: var(--mono); margin-top: 2px; }
+
+        .card {
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 0 40px rgba(0,0,0,0.6);
+        }
+        .card-title { font-size: 1.1rem; font-weight: 600; margin-bottom: 4px; }
+        .card-sub   { font-size: 0.8rem; color: var(--gray3); font-family: var(--mono); margin-bottom: 1.75rem; }
+
+        .alert-error {
+            background: rgba(230,57,70,0.1);
+            border: 1px solid rgba(230,57,70,0.3);
+            border-radius: 6px;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.8rem;
+            color: #ff6b6b;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .fields-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+        .field { margin-bottom: 1rem; }
+        .field label {
+            display: block;
+            font-size: 0.72rem;
+            font-weight: 500;
+            color: var(--gray2);
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        .field-wrap { position: relative; }
+        .field-wrap i {
+            position: absolute;
+            left: 12px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray3);
+            font-size: 0.78rem;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+        .field input {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: 0.65rem 0.9rem 0.65rem 2.2rem;
+            font-size: 0.875rem;
+            font-family: var(--sans);
+            color: var(--white);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .field input::placeholder { color: var(--gray3); }
+        .field input:focus {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px var(--red-dim);
+        }
+        .field-wrap:focus-within i { color: var(--red); }
+
+        /* Términos */
+        .terminos-box {
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: 1rem;
+            max-height: 220px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            color: var(--gray2);
+            line-height: 1.7;
+            margin-bottom: 1rem;
+            scrollbar-width: thin;
+            scrollbar-color: var(--red) var(--bg4);
+        }
+        .terminos-box::-webkit-scrollbar { width: 4px; }
+        .terminos-box::-webkit-scrollbar-track { background: var(--bg4); }
+        .terminos-box::-webkit-scrollbar-thumb { background: var(--red); border-radius: 2px; }
+
+        .terminos-box h3 {
+            font-size: 0.78rem;
+            color: var(--white);
+            font-weight: 600;
+            margin: 1rem 0 0.4rem;
+        }
+        .terminos-box h3:first-child { margin-top: 0; }
+        .terminos-box p { margin-bottom: 0.5rem; }
+        .terminos-box ul { padding-left: 1rem; margin-bottom: 0.5rem; }
+        .terminos-box li { margin-bottom: 0.3rem; }
+        .terminos-box .highlight {
+            color: var(--red);
+            font-weight: 600;
+        }
+
+        .check-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 1.25rem;
+            cursor: pointer;
+        }
+        .check-row input[type="checkbox"] {
+            width: 16px; height: 16px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            accent-color: var(--red);
+            cursor: pointer;
+        }
+        .check-row span {
+            font-size: 0.8rem;
+            color: var(--gray2);
+            line-height: 1.5;
+        }
+        .check-row span b { color: var(--white); }
+
+        .btn {
+            width: 100%;
+            background: var(--red);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.72rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            font-family: var(--sans);
+            cursor: pointer;
+            letter-spacing: 0.3px;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn:hover { background: var(--red2); box-shadow: 0 4px 16px rgba(230,57,70,0.35); }
+        .btn:active { transform: scale(0.99); }
+        .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .login-link {
+            text-align: center;
+            margin-top: 1.25rem;
+            font-size: 0.8rem;
+            color: var(--gray3);
+        }
+        .login-link a { color: var(--red); text-decoration: none; }
+        .login-link a:hover { text-decoration: underline; }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.72rem;
+            color: var(--gray3);
+            font-family: var(--mono);
+            line-height: 1.6;
+        }
+        .footer-note span { color: rgba(230,57,70,0.6); }
+
+        /* Password strength */
+        .strength-bar {
+            height: 3px;
+            border-radius: 2px;
+            background: var(--bg4);
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .strength-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.3s, background 0.3s;
+            width: 0%;
+        }
+        .strength-text {
+            font-size: 0.68rem;
+            color: var(--gray3);
+            margin-top: 3px;
+            font-family: var(--mono);
+        }
+    </style>
+</head>
+<body>
+<div class="wrap">
+
+    <div class="logo">
+        <div class="logo-icon"><i class="fa-solid fa-shield-halved"></i></div>
+        <div>
+            <div class="logo-name">D4YSHELL</div>
+            <div class="logo-ver">v2.1 — autonomous</div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Crear cuenta</div>
+        <div class="card-sub">// acceso a plataforma de ciberseguridad ofensiva</div>
+
+        {% if error %}
+        <div class="alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i>{{ error }}
+        </div>
+        {% endif %}
+
+        <form method="POST" action="/register" id="regForm">
+
+            <div class="fields-row">
+                <div class="field">
+                    <label>Nombre</label>
+                    <div class="field-wrap">
+                        <input type="text" name="nombre" placeholder="Tu nombre" required>
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+                <div class="field">
+                    <label>Apellido</label>
+                    <div class="field-wrap">
+                        <input type="text" name="apellido" placeholder="Tu apellido" required>
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Correo electrónico</label>
+                <div class="field-wrap">
+                    <input type="email" name="email" placeholder="correo@empresa.com" required>
+                    <i class="fa-solid fa-envelope"></i>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Usuario</label>
+                <div class="field-wrap">
+                    <input type="text" name="username" placeholder="nombre_de_usuario" required
+                           pattern="[a-zA-Z0-9_]{3,30}" title="3-30 caracteres, solo letras, números y guión bajo">
+                    <i class="fa-solid fa-at"></i>
+                </div>
+            </div>
+
+            <div class="field">
+                <label>Empresa / Organización <span style="color:var(--gray3);font-weight:400">(opcional)</span></label>
+                <div class="field-wrap">
+                    <input type="text" name="empresa" placeholder="Nombre de tu empresa">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+            </div>
+
+            <div class="fields-row">
+                <div class="field">
+                    <label>Contraseña</label>
+                    <div class="field-wrap">
+                        <input type="password" name="password" id="passInput"
+                               placeholder="••••••••" required minlength="8">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                    <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
+                    <div class="strength-text" id="strengthText"></div>
+                </div>
+                <div class="field">
+                    <label>Confirmar contraseña</label>
+                    <div class="field-wrap">
+                        <input type="password" name="password2" id="pass2Input"
+                               placeholder="••••••••" required minlength="8">
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Términos -->
+            <div class="field" style="margin-bottom:0.75rem">
+                <label>Términos y Condiciones de Uso</label>
+                <div class="terminos-box" id="terminosBox">
+                    <h3>1. USO AUTORIZADO — CONDICIÓN ESENCIAL</h3>
+                    <p>El Usuario se compromete de manera <span class="highlight">irrevocable</span> a utilizar D4yShell <span class="highlight">únicamente</span> sobre sistemas, redes o dispositivos respecto de los cuales cuente con <span class="highlight">autorización expresa, previa y por escrito</span> del propietario legítimo.</p>
+
+                    <h3>2. USOS ESTRICTAMENTE PROHIBIDOS</h3>
+                    <ul>
+                        <li>Acceder, escanear o atacar sistemas sin autorización del propietario.</li>
+                        <li>Realizar actividades que constituyan delitos informáticos conforme al Código Penal Federal Mexicano (Arts. 211 Bis 1 al 211 Bis 7).</li>
+                        <li>Usar la plataforma para espionaje, extorsión, ransomware o robo de información.</li>
+                        <li>Revender o transferir el acceso a terceros sin autorización de D4yShell.</li>
+                        <li>Usar la plataforma contra infraestructura crítica nacional o internacional.</li>
+                        <li>Divulgar información sensible obtenida durante el uso sin autorización del propietario del sistema.</li>
+                    </ul>
+
+                    <h3>3. RESPONSABILIDAD DEL USUARIO</h3>
+                    <p>El Usuario asume <span class="highlight">plena y exclusiva responsabilidad</span> por todas las actividades realizadas mediante su cuenta. Se obliga a indemnizar y mantener en paz y a salvo a D4yShell frente a cualquier reclamación derivada del uso indebido de la plataforma.</p>
+
+                    <h3>4. LIMITACIÓN DE RESPONSABILIDAD</h3>
+                    <p>D4yShell no será responsable por daños derivados del uso indebido de la plataforma, acciones legales contra el Usuario, pérdida de datos o daños a sistemas de terceros causados por el Usuario. El uso es <span class="highlight">bajo propio riesgo</span>.</p>
+
+                    <h3>5. CUENTA DE USUARIO</h3>
+                    <p>El Usuario es responsable de mantener la confidencialidad de sus credenciales. D4yShell se reserva el derecho de suspender o cancelar el acceso ante indicios de violación de estos Términos o actividad ilícita.</p>
+
+                    <h3>6. CONSERVACIÓN DE EVIDENCIA</h3>
+                    <p>El Usuario está obligado a conservar la documentación de autorización de sus clientes por un mínimo de <span class="highlight">5 años</span> y presentarla ante autoridad competente cuando le sea requerida.</p>
+
+                    <h3>7. LEGISLACIÓN APLICABLE</h3>
+                    <p>Estos Términos se rigen por las leyes de los <span class="highlight">Estados Unidos Mexicanos</span>. Jurisdicción: tribunales competentes de la Ciudad de México.</p>
+
+                    <h3>8. DECLARACIONES AL ACEPTAR</h3>
+                    <p>Al registrarse, el Usuario declara: ser mayor de 18 años, tener capacidad legal para contratar, haber leído y comprendido estos Términos, y comprometerse a usar la plataforma exclusivamente para fines legales sobre sistemas debidamente autorizados.</p>
+                </div>
+            </div>
+
+            <label class="check-row">
+                <input type="checkbox" name="acepta_terminos" id="checkTerminos" required>
+                <span>He leído y acepto los <b>Términos y Condiciones de Uso</b> de D4yShell. Entiendo que el uso no autorizado de esta plataforma constituye un delito y asumo total responsabilidad por mis acciones.</span>
+            </label>
+
+            <label class="check-row">
+                <input type="checkbox" name="acepta_mayoria" required>
+                <span>Declaro ser <b>mayor de 18 años</b> y tener capacidad legal para contratar.</span>
+            </label>
+
+            <label class="check-row">
+                <input type="checkbox" name="acepta_autorizado" required>
+                <span>Me comprometo a usar D4yShell <b>únicamente sobre sistemas que tengo autorización expresa</b> para analizar.</span>
+            </label>
+
+            <button type="submit" class="btn" id="btnRegistro">
+                <i class="fa-solid fa-user-plus"></i>
+                Crear cuenta
+            </button>
+        </form>
+
+        <div class="login-link">
+            ¿Ya tienes cuenta? <a href="/login">Inicia sesión</a>
+        </div>
+    </div>
+
+    <div class="footer-note">
+        D4yShell — Para uso autorizado únicamente<br>
+        <span>Todas las sesiones son registradas y monitoreadas</span>
+    </div>
+
+</div>
+
+<script>
+    // Password strength
+    const passInput = document.getElementById('passInput');
+    const fill      = document.getElementById('strengthFill');
+    const txt       = document.getElementById('strengthText');
+
+    passInput.addEventListener('input', () => {
+        const v = passInput.value;
+        let score = 0;
+        if (v.length >= 8)  score++;
+        if (v.length >= 12) score++;
+        if (/[A-Z]/.test(v)) score++;
+        if (/[0-9]/.test(v)) score++;
+        if (/[^A-Za-z0-9]/.test(v)) score++;
+
+        const levels = [
+            { w: '20%',  bg: '#e63946', label: 'Muy débil' },
+            { w: '40%',  bg: '#e63946', label: 'Débil' },
+            { w: '60%',  bg: '#f4a261', label: 'Regular' },
+            { w: '80%',  bg: '#e9c46a', label: 'Buena' },
+            { w: '100%', bg: '#2d6a4f', label: 'Fuerte' },
+        ];
+        const l = levels[Math.min(score, 4)];
+        fill.style.width      = l.w;
+        fill.style.background = l.bg;
+        txt.textContent       = v.length ? l.label : '';
+    });
+
+    // Scroll en términos — habilitar checkbox al llegar al final
+    const box   = document.getElementById('terminosBox');
+    const check = document.getElementById('checkTerminos');
+
+    box.addEventListener('scroll', () => {
+        if (box.scrollTop + box.clientHeight >= box.scrollHeight - 10) {
+            check.disabled = false;
+        }
+    });
+</script>
+</body>
+</html>

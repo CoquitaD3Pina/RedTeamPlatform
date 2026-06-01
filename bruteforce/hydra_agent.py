@@ -1,7 +1,7 @@
 import time
 import re
 import config
-from utils.logger import log
+from d4y_utils.logger import log
 from core.ssh_manager import KaliSSH
 from core.database import RedTeamDB
 

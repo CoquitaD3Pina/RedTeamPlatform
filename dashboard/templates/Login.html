@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>D4YSHELL — Acceso</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg:       #0a0a0a;
+            --bg2:      #111111;
+            --bg3:      #161616;
+            --bg4:      #1c1c1c;
+            --red:      #e63946;
+            --red2:     #c1121f;
+            --red-glow: rgba(230,57,70,0.18);
+            --red-dim:  rgba(230,57,70,0.08);
+            --white:    #f8f9fa;
+            --gray1:    #e9ecef;
+            --gray2:    #adb5bd;
+            --gray3:    #6c757d;
+            --border:   rgba(255,255,255,0.06);
+            --border2:  rgba(255,255,255,0.1);
+            --sans:     'Inter', system-ui, sans-serif;
+            --mono:     'IBM Plex Mono', monospace;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--white);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(230,57,70,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(230,57,70,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            top: -200px; left: -200px;
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(230,57,70,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+
+        .login-wrap {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 400px;
+            padding: 1rem;
+            animation: fadeUp 0.4s ease both;
+        }
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(16px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        .login-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2.5rem;
+            justify-content: center;
+        }
+        .logo-icon {
+            width: 40px; height: 40px;
+            background: var(--red);
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(230,57,70,0.4);
+        }
+        .logo-icon i { color: #fff; font-size: 1rem; }
+        .logo-texts { text-align: left; }
+        .logo-name { font-size: 1.1rem; font-weight: 700; letter-spacing: 0.5px; line-height: 1; color: var(--white); }
+        .logo-ver  { font-size: 0.7rem; color: var(--gray3); font-family: var(--mono); margin-top: 2px; }
+
+        .login-card {
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 0 40px rgba(0,0,0,0.6), 0 0 0 1px rgba(230,57,70,0.05);
+        }
+
+        .card-header { margin-bottom: 1.75rem; }
+        .card-title  { font-size: 1.1rem; font-weight: 600; color: var(--white); margin-bottom: 4px; }
+        .card-sub    { font-size: 0.8rem; color: var(--gray3); font-family: var(--mono); }
+
+        .alert-error {
+            background: rgba(230,57,70,0.1);
+            border: 1px solid rgba(230,57,70,0.3);
+            border-radius: 6px;
+            padding: 0.65rem 0.9rem;
+            font-size: 0.8rem;
+            color: #ff6b6b;
+            margin-bottom: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .field { margin-bottom: 1.1rem; }
+        .field label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 500;
+            color: var(--gray2);
+            margin-bottom: 6px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        .field-input-wrap { position: relative; }
+        .field-input-wrap i {
+            position: absolute;
+            left: 12px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray3);
+            font-size: 0.8rem;
+            pointer-events: none;
+            transition: color 0.2s;
+        }
+        .field input {
+            width: 100%;
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: 0.65rem 0.9rem 0.65rem 2.2rem;
+            font-size: 0.875rem;
+            font-family: var(--sans);
+            color: var(--white);
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        .field input::placeholder { color: var(--gray3); }
+        .field input:focus {
+            border-color: var(--red);
+            box-shadow: 0 0 0 3px var(--red-dim);
+        }
+        .field-input-wrap:focus-within i { color: var(--red); }
+
+        .btn-login {
+            width: 100%;
+            background: var(--red);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 0.72rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 600;
+            font-family: var(--sans);
+            cursor: pointer;
+            margin-top: 0.5rem;
+            letter-spacing: 0.3px;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-login:hover { background: var(--red2); box-shadow: 0 4px 16px rgba(230,57,70,0.35); }
+        .btn-login:active { transform: scale(0.99); }
+
+        .divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 1.25rem 0;
+            color: var(--gray3);
+            font-size: 0.75rem;
+        }
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border2);
+        }
+
+        .btn-google {
+            width: 100%;
+            background: var(--bg3);
+            color: var(--white);
+            border: 1px solid var(--border2);
+            border-radius: 6px;
+            padding: 0.65rem 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            font-family: var(--sans);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            text-decoration: none;
+            transition: border-color 0.2s, background 0.2s;
+        }
+        .btn-google:hover {
+            background: var(--bg4);
+            border-color: var(--border2);
+        }
+        .btn-google img { width: 16px; height: 16px; }
+
+        .register-link {
+            text-align: center;
+            margin-top: 1.25rem;
+            font-size: 0.8rem;
+            color: var(--gray3);
+        }
+        .register-link a { color: var(--red); text-decoration: none; }
+        .register-link a:hover { text-decoration: underline; }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.72rem;
+            color: var(--gray3);
+            font-family: var(--mono);
+            line-height: 1.6;
+        }
+        .login-footer span { color: rgba(230,57,70,0.6); }
+    </style>
+</head>
+<body>
+    <div class="login-wrap">
+
+        <div class="login-logo">
+            <div class="logo-icon"><i class="fa-solid fa-shield-halved"></i></div>
+            <div class="logo-texts">
+                <div class="logo-name">D4YSHELL</div>
+                <div class="logo-ver">v2.1 — autonomous</div>
+            </div>
+        </div>
+
+        <div class="login-card">
+            <div class="card-header">
+                <div class="card-title">Acceso al sistema</div>
+                <div class="card-sub">// sesión registrada. solo uso autorizado.</div>
+            </div>
+
+            {% if error %}
+            <div class="alert-error">
+                <i class="fa-solid fa-circle-exclamation"></i>
+                {{ error }}
+            </div>
+            {% endif %}
+
+            <form method="POST" action="/login">
+                <div class="field">
+                    <label>Usuario</label>
+                    <div class="field-input-wrap">
+                        <input type="text" name="username" placeholder="operador"
+                               autocomplete="username" autofocus required>
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                </div>
+
+                <div class="field">
+                    <label>Contraseña</label>
+                    <div class="field-input-wrap">
+                        <input type="password" name="password" placeholder="••••••••"
+                               autocomplete="current-password" required>
+                        <i class="fa-solid fa-lock"></i>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-login">
+                    <i class="fa-solid fa-right-to-bracket"></i>
+                    Iniciar sesión
+                </button>
+            </form>
+
+            <div class="divider">o continúa con</div>
+
+            <a href="/login/google" class="btn-google">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg">
+                Entrar con Google
+            </a>
+
+            <div class="register-link">
+                ¿No tienes cuenta? <a href="/register">Regístrate</a>
+            </div>
+
+        </div>
+
+        <div class="login-footer">
+            D4YSHELL — Para uso autorizado únicamente<br>
+            <span>Todas las sesiones son registradas y monitoreadas</span>
+        </div>
+    </div>
+</body>
+</html>

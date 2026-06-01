@@ -1,4 +1,4 @@
-from utils.logger import log
+from d4y_utils.logger import log
 
 class ExploitSession:
     def __init__(self, target_ip, exploit_name, tipo="shell", privilegios="user", puerto=4444):

@@ -1,6 +1,6 @@
 import paramiko
 import config
-from utils.logger import log
+from d4y_utils.logger import log
 
 
 class KaliSSH:

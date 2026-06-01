@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from datetime import datetime
 from core.models import TargetProfile
-from utils.logger import log
+from d4y_utils.logger import log
 import config
 
 
